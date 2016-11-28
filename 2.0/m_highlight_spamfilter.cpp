@@ -62,6 +62,8 @@ class ModuleHighlightSpamfilter : public Module
 	{
 		Implementation eventList[] = { I_OnRehash, I_OnUserPreMessage };
 		ServerInstance->Modules->Attach(eventList, this, sizeof(eventList) / sizeof(Implementation));
+
+		OnRehash(NULL);
 	}
 
 	void OnRehash(User* user)
@@ -69,8 +71,6 @@ class ModuleHighlightSpamfilter : public Module
 		ConfigTag* tag = ServerInstance->Config->ConfValue("highlightspamfilter");
 		percent = tag->getFloat("percent", 0.60f);
 		min = tag->getInt("min", 15);
-
-		OnRehash(NULL);
 	}
 
 	ModResult OnUserPreMessage(User* user, void* dest, int target_type, std::string &text, char status, CUList &exempt_list)

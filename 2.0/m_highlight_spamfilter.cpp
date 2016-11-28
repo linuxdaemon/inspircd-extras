@@ -54,7 +54,7 @@ class ModuleHighlightSpamfilter : public Module
 	}
 
  public:
-	ModuleHighlightSpamfilter() : percent(0.0f)
+	ModuleHighlightSpamfilter() : percent(0.0f), min(0)
 	{
 	}
 
@@ -69,6 +69,8 @@ class ModuleHighlightSpamfilter : public Module
 		ConfigTag* tag = ServerInstance->Config->ConfValue("highlightspamfilter");
 		percent = tag->getFloat("percent", 0.60f);
 		min = tag->getInt("min", 15);
+
+		OnRehash(NULL);
 	}
 
 	ModResult OnUserPreMessage(User* user, void* dest, int target_type, std::string &text, char status, CUList &exempt_list)

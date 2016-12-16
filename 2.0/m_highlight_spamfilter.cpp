@@ -28,6 +28,8 @@ class ModuleHighlightSpamfilter : public Module
 {
 	float percent;
 	unsigned int min;
+	bool ignoreopers;
+	bool ignorechanops;
 
 	bool IsSeparator(char c)
 	{
@@ -71,14 +73,18 @@ class ModuleHighlightSpamfilter : public Module
 		ConfigTag* tag = ServerInstance->Config->ConfValue("highlightspamfilter");
 		percent = tag->getFloat("percent", 0.60f);
 		min = tag->getInt("min", 15);
+		ignoreopers = tag->getBool("ignoreopers", true);
+		ignorechanops = tag->getBool("ignorechanops", true);
 	}
 
 	ModResult OnUserPreMessage(User* user, void* dest, int target_type, std::string &text, char status, CUList &exempt_list)
 	{
-		if (!IS_LOCAL(user) || target_type != TYPE_CHANNEL || percent <= 0.0f)
+		if (!IS_LOCAL(user) || target_type != TYPE_CHANNEL || percent <= 0.0f || (ignoreopers && IS_OPER(user)))
 			return MOD_RES_PASSTHRU;
 
 		Channel *channel = static_cast<Channel *>(dest);
+		if ((ignorechanops && channel->GetPrefixValue(user) >= OP_VALUE))
+			return MOD_RES_PASSTHRU;
 		unsigned int hit = 0, online = 0, miss = 0;
 
 		std::string cur;

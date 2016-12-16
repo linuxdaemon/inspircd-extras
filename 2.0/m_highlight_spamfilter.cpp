@@ -27,7 +27,7 @@
 class ModuleHighlightSpamfilter : public Module
 {
 	float percent;
-	int min;
+	unsigned int min;
 
 	bool IsSeparator(char c)
 	{
@@ -79,18 +79,24 @@ class ModuleHighlightSpamfilter : public Module
 			return MOD_RES_PASSTHRU;
 
 		Channel *channel = static_cast<Channel *>(dest);
-		int hit = 0, online = 0, miss = 0;
+		unsigned int hit = 0, online = 0, miss = 0;
 
 		std::string cur;
-		for (unsigned int i = 0; i < text.size(); ++i)
+		for (unsigned int i = 0; i <= text.size(); ++i)
 		{
-			if (IsNickChar(text[i]))
+			if (i < text.size())
 			{
-				cur.push_back(text[i]);
-				continue;
+				if (IsNickChar(text[i]))
+				{
+					cur.push_back(text[i]);
+					continue;
+				}
+
+				if (!IsSeparator(text[i]))
+					continue;
 			}
 
-			if (!IsSeparator(text[i]) || cur.empty())
+			if (cur.empty())
 				continue;
 
 			User *u = ServerInstance->FindNickOnly(cur);
@@ -110,13 +116,15 @@ class ModuleHighlightSpamfilter : public Module
 			++hit;
 		}
 
-		if (hit == 0 || miss == 0)
+		if (hit == 0)
 			return MOD_RES_PASSTHRU;
 
-		if (online + miss < min)
+		unsigned int total = online + miss;
+
+		if (total < min || total == 0)
 			return MOD_RES_PASSTHRU;
 
-		if ((float) hit / (float) (online + miss) > percent)
+		if ((float) hit / (float) total > percent)
 		{
 			user->WriteServ("NOTICE %s :Message to %s blocked due to spam.", user->nick.c_str(), channel->name.c_str());
 			return MOD_RES_DENY;

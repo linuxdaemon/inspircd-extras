@@ -30,10 +30,11 @@ class ModuleHighlightSpamfilter : public Module
 	unsigned int min;
 	bool ignoreopers;
 	bool ignorechanops;
+	std::bitset<256> sepchars;
 
 	bool IsSeparator(char c)
 	{
-		return c == ' ' || c == ',' || c == ':';
+		return sepchars[c & 0xFF];
 	}
 
 	bool IsNickChar(char c)
@@ -42,9 +43,7 @@ class ModuleHighlightSpamfilter : public Module
 			return true;
 		if (c >= '0' && c <= '9')
 			return true;
-		if (c == '-')
-			return true;
-		return false;
+		return c == '-';
 	}
 
 	bool IsOnChannel(Channel *c, User *u)
@@ -75,6 +74,17 @@ class ModuleHighlightSpamfilter : public Module
 		min = tag->getInt("min", 15);
 		ignoreopers = tag->getBool("ignoreopers", true);
 		ignorechanops = tag->getBool("ignorechanops", true);
+		std::string sepToken = tag->getString("sepchars", "32,44,58");  // Defaults to ' ' ',' and ':'
+
+		if (!sepToken.compare(0, 2, "0-"))
+			sepToken[0] = '1';
+
+		sepchars.reset();
+
+		irc::portparser seprange(sepToken, false);
+		long denyno;
+		while (0 != (denyno = seprange.GetToken()))
+			sepchars[denyno & 0xFF] = true;
 	}
 
 	ModResult OnUserPreMessage(User* user, void* dest, int target_type, std::string &text, char status, CUList &exempt_list)
@@ -83,7 +93,7 @@ class ModuleHighlightSpamfilter : public Module
 			return MOD_RES_PASSTHRU;
 
 		Channel *channel = static_cast<Channel *>(dest);
-		if ((ignorechanops && channel->GetPrefixValue(user) >= OP_VALUE))
+		if ((ignorechanops && channel->GetPrefixValue(user) >= VOICE_VALUE))
 			return MOD_RES_PASSTHRU;
 		unsigned int hit = 0, online = 0, miss = 0;
 
